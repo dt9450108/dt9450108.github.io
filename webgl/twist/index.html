@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Tessellation and Twist</title>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css">
+    <style type="text/css" media="screen">
+    body {
+        background: #E0F2F1 !important;
+    }
+    
+    .slider_vertical {
+        padding: 10px;
+    }
+    
+    .text_vertical {
+        padding: 10px;
+    }
+    
+    .page_header_align {
+        padding-top: 100px;
+        padding-left: 20px;
+        margin: 0px;
+        background-color: #B2DFDB;
+        height: 200px;
+        color: #00796B;
+    }
+    
+    .container_align {
+        padding: 10px;
+        margin: 5px;
+    }
+    
+    .canvas_align {
+        padding-left: 40px;
+    }
+    </style>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec4 vPosition; void main() { gl_Position = vPosition; }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float; void main() { gl_FragColor = vec4( 0.02745098, 0.411764706, 0.137254902, 1.0 ); }
+    </script>
+</head>
+
+<body>
+    <div class="page-header page_header_align">
+        <h1>Tessellation and Twist <small>x'= x cos(dθ) − y sin(dθ) | y'= x sin(dθ) + y cos(dθ)</small></h1>
+    </div>
+    <div class="container container_align">
+        <div class="row">
+            <div class="col-md-6 canvas_align">
+                <canvas id="twistcanvas" width="500" height="500">
+                    Please use a browser that supports "canvas "
+                </canvas>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-1 text-center text_vertical">Twist</div>
+            <div class="col-md-2 col-md-offset-1">
+                <button type="button" id="twistyes" class="btn btn-success btn-sm btn-block"><span class="glyphicon glyphicon-ok pull-left" aria-hidden="true"></span>Yes</button>
+            </div>
+            <div class="col-md-2">
+                <button type="button" id="twistno" class="btn btn-danger btn-sm btn-block"><span class="glyphicon glyphicon-remove pull-left" aria-hidden="true"></span>No</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-1 text-center text_vertical">Scale</div>
+            <div class="col-md-1">
+                <input type="number" id="scaleInput" class="form-control" value="1" min="0.1" max="2">
+            </div>
+            <div class="col-md-4 slider_vertical">
+                <div id="scaleSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-1 text-center text_vertical">Depth</div>
+            <div class="col-md-1">
+                <input type="number" id="depthInput" class="form-control" value="1" min="1" max="8">
+            </div>
+            <div class="col-md-4 slider_vertical">
+                <div id="depthSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-1 text-center text_vertical">Degree</div>
+            <div class="col-md-1">
+                <input type="number" id="degreeInput" class="form-control" value="0" min="-180" max="180">
+            </div>
+            <div class="col-md-4 slider_vertical">
+                <div id="degreeSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
+            </div>
+        </div>
+    </div>
+    <script src="js/jquery-2.1.4.min.js" charset="utf-8"></script>
+    <script src="js/bootstrap.min.js" charset="utf-8"></script>
+    <script src="js/jquery-ui.js" charset="utf-8"></script>
+    <script src="js/lib/webgl-utils.js" charset="utf-8"></script>
+    <script src="js/lib/initShaders.js" charset="utf-8"></script>
+    <script src="js/lib/MV.js" charset="utf-8"></script>
+    <script src="js/twisttriangle.js" charset="utf-8"></script>
+</body>
+
+</html>
