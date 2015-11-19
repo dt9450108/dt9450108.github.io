@@ -7,6 +7,7 @@
     <title>Tessellation and Twist</title>
     <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
     <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap-colorpicker.min.css">
     <style type="text/css" media="screen">
     body {
         background: #E0F2F1 !important;
@@ -37,12 +38,33 @@
     .canvas_align {
         padding-left: 40px;
     }
+    
+    .mylabel {
+        padding: 8px 15px;
+        line-height: 2.5;
+    }
+    
+    .colorpicker-2x .colorpicker-saturation {
+        width: 125px;
+        height: 125px;
+    }
+    
+    .colorpicker-2x .colorpicker-hue,
+    .colorpicker-2x .colorpicker-alpha {
+        width: 30px;
+        height: 125px;
+    }
+    
+    .colorpicker-2x .colorpicker-color,
+    .colorpicker-2x .colorpicker-color div {
+        height: 30px;
+    }
     </style>
     <script id="vertex-shader" type="x-shader/x-vertex">
-        attribute vec4 vPosition; void main() { gl_Position = vPosition; }
+        attribute vec4 vPosition; attribute vec4 vColor; varying vec4 color; void main() { gl_Position = vPosition; color = vColor; }
     </script>
     <script id="fragment-shader" type="x-shader/x-fragment">
-        precision mediump float; void main() { gl_FragColor = vec4( 0.02745098, 0.411764706, 0.137254902, 1.0 ); }
+        precision mediump float; varying vec4 color; void main() { gl_FragColor = color; }
     </script>
 </head>
 
@@ -66,13 +88,15 @@
             <div class="col-md-2">
                 <button type="button" id="twistno" class="btn btn-danger btn-sm btn-block"><span class="glyphicon glyphicon-remove pull-left" aria-hidden="true"></span>No</button>
             </div>
+            <div class="col-md-1 text-center">
+                <span id="pcolorLabel" class="label label-default mylabel">Color</span></div>
         </div>
         <div class="row">
             <div class="col-md-1 text-center text_vertical">Scale</div>
             <div class="col-md-1">
                 <input type="number" id="scaleInput" class="form-control" value="1" min="0.1" max="2">
             </div>
-            <div class="col-md-4 slider_vertical">
+            <div class="col-md-5 slider_vertical">
                 <div id="scaleSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
             </div>
         </div>
@@ -81,7 +105,7 @@
             <div class="col-md-1">
                 <input type="number" id="depthInput" class="form-control" value="1" min="1" max="8">
             </div>
-            <div class="col-md-4 slider_vertical">
+            <div class="col-md-5 slider_vertical">
                 <div id="depthSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
             </div>
         </div>
@@ -90,7 +114,7 @@
             <div class="col-md-1">
                 <input type="number" id="degreeInput" class="form-control" value="0" min="-180" max="180">
             </div>
-            <div class="col-md-4 slider_vertical">
+            <div class="col-md-5 slider_vertical">
                 <div id="degreeSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
             </div>
         </div>
@@ -98,10 +122,12 @@
     <script src="js/jquery-2.1.4.min.js" charset="utf-8"></script>
     <script src="js/bootstrap.min.js" charset="utf-8"></script>
     <script src="js/jquery-ui.js" charset="utf-8"></script>
+    <script src="js/bootstrap-colorpicker.min.js" charset="utf-8"></script>
     <script src="js/lib/webgl-utils.js" charset="utf-8"></script>
     <script src="js/lib/initShaders.js" charset="utf-8"></script>
     <script src="js/lib/MV.js" charset="utf-8"></script>
     <script src="js/twisttriangle.js" charset="utf-8"></script>
+    <!-- // <script src="js/" charset="utf-8"></script> -->
 </body>
 
 </html>

@@ -5,6 +5,8 @@ var TWIST_ENABLE = 1;
 var THETA = 0 * Math.PI / 180;
 var DIVIDE_NUM = 1;
 var TRIANGLE_SCALE = 1;
+var colors = [];
+var colord = vec4(0.02745098, 0.411764706, 0.137254902, 1.0);
 
 $(document).ready(function() {
     $('#twistyes').click(function() {
@@ -72,6 +74,25 @@ $(document).ready(function() {
         redraw();
     });
 
+    $('#pcolorLabel').colorpicker({
+        'format': 'rgba',
+        'customClass': 'colorpicker-2x',
+        'color': 'rgba(39,114,39, 1.0)',
+        'sliders': {
+            'saturation': {
+                'maxLeft': 125,
+                'maxTop': 125
+            },
+            'hue': {
+                'maxTop': 125
+            },
+            'alpha': {
+                'maxTop': 125
+            }
+        }
+    });
+    $('#pcolorLabel').on('changeColor.colorpicker', setLabelColor);
+    $('#pcolorLabel').css('background-color', 'rgba(39,114,39, 1.0)');
 });
 
 window.onload = function init() {
@@ -81,11 +102,12 @@ window.onload = function init() {
     if (!gl) {
         console.log("WebGL isn't available");
     }
-    draw(canvas);
+    draw();
 };
 
 function draw() {
     points = [];
+    colors = [];
     // var vertices = new Float32Array([-1, -1, 0, 1, 1, -1]);
     // var vertices = [vec2(-1, -1), vec2(0, 1), vec2(1, -1)];
     var point1 = vec2(0, Math.sqrt(3) / 3 * TRIANGLE_SCALE);
@@ -102,15 +124,21 @@ function draw() {
     var program = initShaders(gl, "vertex-shader", "fragment-shader");
     gl.useProgram(program);
 
+    var cBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, cBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, flatten(colors), gl.STATIC_DRAW);
+    var vColor = gl.getAttribLocation(program, "vColor");
+    gl.vertexAttribPointer(vColor, 4, gl.FLOAT, false, 0, 0);
+    gl.enableVertexAttribArray(vColor);
+
     // Load the data into the GPU
     var bufferId = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bufferId);
     gl.bufferData(gl.ARRAY_BUFFER, flatten(points), gl.STATIC_DRAW);
-
-    // Associate out shader variables with our data buffer
     var vPosition = gl.getAttribLocation(program, "vPosition");
     gl.vertexAttribPointer(vPosition, 2, gl.FLOAT, false, 0, 0);
     gl.enableVertexAttribArray(vPosition);
+
     render();
 }
 
@@ -124,9 +152,9 @@ function redraw() {
 
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT);
-    // gl.drawArrays(gl.TRIANGLE_STRIP, 0, points.length);
-    for (var i = 0; i < points.length; i += 3)
-        gl.drawArrays(gl.LINE_LOOP, i, 3);
+    gl.drawArrays(gl.TRIANGLES, 0, points.length);
+    // for (var i = 0; i < points.length; i += 3)
+    //     gl.drawArrays(gl.LINE_LOOP, i, 3);
 }
 
 function divideTriangle(a, b, c, num) {
@@ -147,6 +175,7 @@ function divideTriangle(a, b, c, num) {
 }
 
 function triangle(a, b, c) {
+    colors.push(colord, colord, colord);
     points.push(twist(a), twist(b), twist(c));
 }
 
@@ -160,4 +189,18 @@ function twist(p) {
     var sin = Math.sin(dtheta);
     var cos = Math.cos(dtheta);
     return vec2((p[0] * cos - p[1] * sin), (p[0] * sin + p[1] * cos));
+}
+
+function setLabelColor(event) {
+    var rgb = event.color.toRGB();
+    $('#pcolorLabel').css('background-color', 'rgba(' + rgb.r + ', ' + rgb.g + ', ' + rgb.b + ', ' + rgb.a + ')');
+
+    if (rgb.a <= 0.4 || (rgb.r == 255 || rgb.g == 255 || rgb.b == 255))
+        $('#pcolorLabel').css('color', '#fff');
+    else if (rgb.a <= 0.4 || (rgb.r >= 200 || rgb.g >= 200 || rgb.b >= 200))
+        $('#pcolorLabel').css('color', '#000');
+    else
+        $('#pcolorLabel').css('color', '#fff');
+    colord = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
+    redraw();
 }
