@@ -7,6 +7,7 @@ var DIVIDE_NUM = 1;
 var TRIANGLE_SCALE = 1;
 var colors = [];
 var colord = vec4(0.02745098, 0.411764706, 0.137254902, 1.0);
+var mode = 1;
 
 $(document).ready(function() {
     $('#twistyes').click(function() {
@@ -93,6 +94,10 @@ $(document).ready(function() {
     });
     $('#pcolorLabel').on('changeColor.colorpicker', setLabelColor);
     $('#pcolorLabel').css('background-color', 'rgba(39,114,39, 1.0)');
+    $('#changemode').click(function() {
+        mode = !mode;
+        redraw();
+    })
 });
 
 window.onload = function init() {
@@ -152,9 +157,11 @@ function redraw() {
 
 function render() {
     gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.drawArrays(gl.TRIANGLES, 0, points.length);
-    // for (var i = 0; i < points.length; i += 3)
-    //     gl.drawArrays(gl.LINE_LOOP, i, 3);
+    if (mode)
+        gl.drawArrays(gl.TRIANGLES, 0, points.length);
+    else
+        for (var i = 0; i < points.length; i += 3)
+            gl.drawArrays(gl.LINE_LOOP, i, 3);
 }
 
 function divideTriangle(a, b, c, num) {
