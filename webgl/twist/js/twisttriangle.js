@@ -6,7 +6,7 @@ var THETA = 0 * Math.PI / 180;
 var DIVIDE_NUM = 1;
 var TRIANGLE_SCALE = 1;
 var colors = [];
-var colord = vec4(0.02745098, 0.411764706, 0.137254902, 1.0);
+var colord = vec4(0.0, 0.37254902, 0.392156863, 1.0);
 var mode = 1;
 
 $(document).ready(function() {
@@ -78,7 +78,7 @@ $(document).ready(function() {
     $('#pcolorLabel').colorpicker({
         'format': 'rgba',
         'customClass': 'colorpicker-2x',
-        'color': 'rgba(39,114,39, 1.0)',
+        'color': 'rgba(0,96,100, 1.0)',
         'sliders': {
             'saturation': {
                 'maxLeft': 125,
@@ -93,7 +93,7 @@ $(document).ready(function() {
         }
     });
     $('#pcolorLabel').on('changeColor.colorpicker', setLabelColor);
-    $('#pcolorLabel').css('background-color', 'rgba(39,114,39, 1.0)');
+    $('#pcolorLabel').css('background-color', 'rgba(0,96,100, 1.0)');
     $('#changemode').click(function() {
         mode = !mode;
         redraw();
@@ -211,3 +211,4 @@ function setLabelColor(event) {
     colord = vec4(rgb.r / 255, rgb.g / 255, rgb.b / 255, rgb.a);
     redraw();
 }
+
