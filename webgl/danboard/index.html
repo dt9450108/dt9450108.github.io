@@ -1,0 +1,163 @@
+<html>
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Robot - Operations</title>
+    <link rel="stylesheet" type="text/css" href="css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="css/jquery-ui.min.css">
+    <link rel="stylesheet" type="text/css" href="css/bootstrap-colorpicker.min.css">
+    <style type="text/css" media="screen">
+    body {
+        background: #E3F2FD !important;
+    }
+
+    .slider_vertical {
+        padding: 10px;
+    }
+
+    .text_vertical {
+        padding: 10px;
+    }
+
+    .page_header_align {
+        padding-top: 100px;
+        padding-left: 20px;
+        margin: 0px;
+        background-color: #BBDEFB;
+        height: 200px;
+        color: #1976D2;
+    }
+
+    .container_align {
+        padding: 10px;
+        margin: 5px;
+    }
+
+    .canvas_align {
+        padding-left: 40px;
+    }
+
+    .mylabel {
+        padding: 8px 20px;
+        line-height: 2.5;
+        color: #EEEEEE;
+        background-color: #9E9E9E;
+    }
+
+    .transLabel {
+        padding: 8px 20px;
+        line-height: 2.5;
+        color: #EEEEEE;
+        background-color: #9E9E9E;
+    }
+
+    .transLabel:hover {
+        color: #EFEBE9;
+        background-color: #42A5F5;
+    }
+
+    .transLabel:active {
+        color: #FFF;
+        background-color: #0D47A1;
+    }
+
+    .colorpicker-2x .colorpicker-saturation {
+        width: 125px;
+        height: 125px;
+    }
+
+    .colorpicker-2x .colorpicker-hue,
+    .colorpicker-2x .colorpicker-alpha {
+        width: 30px;
+        height: 125px;
+    }
+
+    .colorpicker-2x .colorpicker-color,
+    .colorpicker-2x .colorpicker-color div {
+        height: 30px;
+    }
+    </style>
+    <script id="vertex-shader" type="x-shader/x-vertex">
+        attribute vec4 vPosition; attribute vec4 vColor; varying vec4 fColor; uniform mat4 modelViewMatrix; uniform mat4 projectionMatrix; void main() { fColor = vColor; gl_Position = projectionMatrix * modelViewMatrix * vPosition; }
+    </script>
+    <script id="fragment-shader" type="x-shader/x-fragment">
+        precision mediump float; varying vec4 fColor; void main() { gl_FragColor = fColor; }
+    </script>
+</head>
+
+<body>
+    <div class="page-header page_header_align" id="changemode">
+        <h1>Robot - Operations <small>A Danboard's story</small></h1>
+    </div>
+    <div class="container container_align">
+        <div class="row">
+            <div class="col-md-6 canvas_align">
+                <canvas id="gl-canvas" width="500" height="500">
+                    Please use a browser that supports "canvas "
+                </canvas>
+            </div>
+            <div class="col-md-6 text-center text_vertical">
+                <div class="row">
+                    <div class="col-md-2">
+                        Body
+                    </div>
+                    <div class="col-md-10 slider_vertical">
+                        <div id="bodyRotationSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
+                    </div>
+                </div>
+                <hr style="width: 100%; color: #9E9E9E; height: 1px; background-color:#9E9E9E;">
+                <div class="row">
+                    <div class="col-md-2">
+                        Head
+                    </div>
+                    <div class="col-md-10 slider_vertical">
+                        <div id="headRotationSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
+                    </div>
+                </div>
+                <hr style="width: 100%; color: #9E9E9E; height: 1px; background-color:#9E9E9E;">
+                <div class="row">
+                    <div class="col-md-2">
+                        Walk
+                    </div>
+                    <div class="col-md-10 slider_vertical">
+                        <div id="walkSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
+                    </div>
+                </div>
+                <hr style="width: 100%; color: #9E9E9E; height: 1px; background-color:#9E9E9E;">
+                <div class="row">
+                    <div class="col-md-2">
+                        Run
+                    </div>
+                    <div class="col-md-10 slider_vertical">
+                        <div id="runSlider" class="ui-slider ui-slider-horizontal ui-widget ui-widget-content ui-corner-all"></div>
+                    </div>
+                </div>
+                <hr style="width: 100%; color: #9E9E9E; height: 1px; background-color:#9E9E9E;">
+                <div class="row">
+                    <div class="col-md-4">
+                        <button type="button" id="walkAnimationBtn" class="btn btn-default btn-success btn-lg btn-block">Walk Animation</button>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" id="runAnimationBtn" class="btn btn-default btn-info btn-lg btn-block">Run Animation</button>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="button" id="cancelAnimationBtn" class="btn btn-default btn-danger btn-lg btn-block">Cancel Animation</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="js/jquery-2.1.4.min.js" charset="utf-8"></script>
+    <script src="js/bootstrap.min.js" charset="utf-8"></script>
+    <script src="js/jquery-ui.js" charset="utf-8"></script>
+    <script src="js/bootstrap-colorpicker.min.js" charset="utf-8"></script>
+    <script src="js/lib/webgl-utils.js" charset="utf-8"></script>
+    <script src="js/lib/initShaders.js" charset="utf-8"></script>
+    <script src="js/lib/MV.js" charset="utf-8"></script>
+    <script src="js/danboard.js"></script>
+</body>
+
+</html>
