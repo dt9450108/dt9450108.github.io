@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Vector;
 
 import javax.swing.DefaultComboBoxModel;
+import javax.swing.DropMode;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -52,6 +53,8 @@ import javax.swing.text.Document;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
+import javax.swing.tree.TreePath;
+import javax.swing.tree.TreeSelectionModel;
 
 public class MainUI {
 	public static SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
@@ -129,7 +132,7 @@ public class MainUI {
 	public static JTextPane TaResponses;
 
 	private Vector<FileInfo> localFiles;
-	private Vector<FileInfo> remoteFiles;
+	private Vector<FtpFile> remoteFiles;
 
 	private FtpClient ftpc;
 	private boolean CURRENT_LOCAL_DIRTORY_ROOT = false;
@@ -149,14 +152,48 @@ public class MainUI {
 
 	public MainUI() {
 		this.localFiles = new Vector<FileInfo>();
-		this.remoteFiles = new Vector<FileInfo>();
+		this.remoteFiles = new Vector<FtpFile>();
 		TABLE_RIGHT_ALIGNMENT_RENDER.setHorizontalAlignment(SwingConstants.RIGHT);
 		ftpc = new FtpClient();
 		initialize();
+		getLocalList(getRoot());
 	}
 
-	private void getRemoteList(String dirStr) {
+	private void getRemoteList(String dirStr, String parent) {
+		Vector<FtpFile> ftpFiles = ftpc.doLs();
+		for (int i = 0; i < ftpFiles.size(); i++) {
+			ftpFiles.get(i).setParent(parent);
+			//			System.out.println(ftpFiles.get(i).toString());
+		}
 
+		//		if (FtpClient.SERVER_ROOT_DIR.equals(dirStr))
+		//			dirStr = FtpClient.SERVER_ROOT_DIR;
+
+		dirStr = getRemoteDir(dirStr);
+		int dirStrPos = ((DefaultComboBoxModel<String>) RemoteTreeComboBox.getModel()).getIndexOf(dirStr);
+		if (dirStrPos == -1) {
+			RemoteTreeComboBox.addItem(dirStr);
+			RemoteTreeComboBox.setSelectedIndex(RemoteTreeComboBox.getItemCount() - 1);
+		} else {
+			RemoteTreeComboBox.setSelectedIndex(dirStrPos);
+		}
+
+		remoteFiles.clear();
+		// add the first row
+		remoteFiles.add(new FtpFile("..", "  ", "  ", "  ", "  ", "  "));
+		remoteTableModel.removeAll();
+		if (ftpFiles.size() != 0) {
+			for (FtpFile af : ftpFiles) {
+				if (af.isDirectory()) {
+					af.setType("目錄");
+					af.setSize("");
+				} else {
+					af.setType(readableFileType(af.getAbsolutePath(), false));
+				}
+				remoteFiles.addElement(af);
+			}
+		}
+		this.remoteTableModel.insertData(remoteFiles);
 	}
 
 	private void getLocalList(String dirStr) {
@@ -168,7 +205,7 @@ public class MainUI {
 		}
 
 		dirStr = getDirectory(dirStr);
-		int dirStrPos = ((DefaultComboBoxModel) LocalTreeComboBox.getModel()).getIndexOf(dirStr);
+		int dirStrPos = ((DefaultComboBoxModel<String>) LocalTreeComboBox.getModel()).getIndexOf(dirStr);
 		if (dirStrPos == -1) {
 			LocalTreeComboBox.addItem(dirStr);
 			LocalTreeComboBox.setSelectedIndex(LocalTreeComboBox.getItemCount() - 1);
@@ -190,7 +227,7 @@ public class MainUI {
 						ft = "目錄";
 						fs = "";
 					} else {
-						ft = readableFileType(aFile.getAbsolutePath());
+						ft = readableFileType(aFile.getAbsolutePath(), true);
 						fs = readableFileSize(aFile.length());
 					}
 					localFiles.addElement(new FileInfo(aFile.getName(), fs, ft, DATE_TIME_FORMAT.format(aFile.lastModified())));
@@ -205,7 +242,7 @@ public class MainUI {
 		}
 	}
 
-	public static String readableFileType(String filename) {
+	public String readableFileType(String filename, boolean type) {
 		if (filename == null) {
 			return null;
 		}
@@ -214,11 +251,16 @@ public class MainUI {
 		int index = lastSeparator > extensionPos ? -1 : extensionPos;
 		if (index == -1) {
 			String fileType = "未知";
-			try {
-				fileType = Files.probeContentType(new File(filename).toPath());
-			} catch (Exception e) {
-				System.out.println("readableFileType ERROR");
-				e.printStackTrace();
+			if (type) {
+				// local				
+				try {
+					fileType = Files.probeContentType(new File(filename).toPath());
+				} catch (Exception e) {
+					System.out.println("readableFileType ERROR");
+					e.printStackTrace();
+				}
+			} else {
+				fileType = "檔案";
 			}
 			return fileType;
 		} else {
@@ -226,16 +268,16 @@ public class MainUI {
 		}
 	}
 
-	private String readableFileSize(long size) {
+	public static String readableFileSize(long size) {
 		if (size <= 0)
-			return "0 B";
+			return "0 B   ";
 		final String[] units = new String[] { "B", "KB", "MB", "GB", "TB" };
 		int digitGroups = (int) (Math.log10(size) / Math.log10(1000));
 		return new DecimalFormat("#,##0.#").format(size / Math.pow(1000, digitGroups)) + " " + units[digitGroups] + "   ";
 	}
 
 	private long realFileSize(String size) {
-		if (size.length() == 0)
+		if (size == null || size.length() == 0)
 			return 0;
 		int sp = size.indexOf(' ');
 		int digit;
@@ -278,18 +320,21 @@ public class MainUI {
 		return cur;
 	}
 
+	private String getRemoteParentDir(String cur) {
+		int lastSeparator = cur.lastIndexOf("/", cur.length() - 2);
+		return cur.substring(0, lastSeparator + 1);
+	}
+
+	private String getRemoteDir(String cur) {
+		if (cur.charAt(cur.length() - 1) != '/')
+			cur += "/";
+		return cur;
+	}
+
 	private String getRoot() {
 		String userDir = new File(System.getProperty("user.dir")).getAbsolutePath();
 		String root = userDir.substring(0, userDir.indexOf(File.separator) + 1);
 		return root;
-	}
-
-	private String getTreeAbsolutePath(String strarr) {
-		String[] ss = strarr.split(",");
-		String ns = ss[0];
-		for (int i = 1; i < ss.length; i++)
-			ns += ss[i];
-		return getDirectory(ns);
 	}
 
 	private void initialize() {
@@ -377,11 +422,11 @@ public class MainUI {
 
 					if (new File(td).exists()) {
 						current = td;
-						getLocalList(current);
 					} else {
 						JOptionPane.showMessageDialog(frmHaoFtpClient, "\"" + td + "\" 不存在或是無法存取.");
-						getLocalList(current);
 					}
+					getLocalList(current);
+					getLocalTreeView(current);
 				}
 			}
 		});
@@ -401,19 +446,13 @@ public class MainUI {
 
 		LocalTree = new JTree();
 		LocalTreeScrollPane.setViewportView(LocalTree);
+		LocalTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 		LocalTree.setModel(LocalTreeModel);
 		LocalTree.addTreeSelectionListener(new TreeSelectionListener() {
 			@Override
 			public void valueChanged(TreeSelectionEvent e) {
-				Object o = e.getNewLeadSelectionPath().getLastPathComponent();
-				if (o instanceof FileTreeModel.TreeFile) {
-					System.out.println("Yes");
-				} else {
-					System.out.println("No");
-				}
-				//				FileTreeModel.TreeFile o = e.getNewLeadSelectionPath().getLastPathComponent();
-				//				String ap = getDirectory(((FileTreeModel.TreeFile)).getAbsolutePath());
-				//				getLocalList(ap);
+				String ap = getDirectory(((File) e.getNewLeadSelectionPath().getLastPathComponent()).getAbsolutePath());
+				getLocalList(ap);
 			}
 		});
 		LocalTree.setFont(new Font("新細明體", Font.PLAIN, 12));
@@ -460,6 +499,10 @@ public class MainUI {
 					return -modifier;
 				else if (o2.equals("  "))
 					return modifier;
+				if (o1.length() == 0)
+					return -1;
+				else if (o2.length() == 0)
+					return 1;
 				else {
 					long os1 = realFileSize(o1);
 					long os2 = realFileSize(o2);
@@ -523,6 +566,9 @@ public class MainUI {
 		LocalTable.setRowHeight(25);
 		LocalTable.setShowGrid(false);
 		LocalTable.getTableHeader().setReorderingAllowed(false);
+		LocalTable.setTransferHandler(new TableRowTransferHandler());
+		LocalTable.setDropMode(DropMode.ON);
+		LocalTable.setDragEnabled(true);
 		LocalTable.setRowSorter(localTableSorter);
 		LocalTable.getColumnModel().getColumn(1).setCellRenderer(TABLE_RIGHT_ALIGNMENT_RENDER);
 		LocalTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
@@ -533,7 +579,7 @@ public class MainUI {
 					long total = 0;
 
 					int[] selectedRow;
-					if (LocalTable.getSelectedRow() == 0) {
+					if (LocalTable.getSelectedRow() == 0 && !CURRENT_LOCAL_DIRTORY_ROOT) {
 						selectedRow = new int[LocalTable.getRowCount() - 1];
 						for (int i = 1; i < LocalTable.getRowCount(); i++)
 							selectedRow[i - 1] = i;
@@ -565,11 +611,12 @@ public class MainUI {
 			public void mouseClicked(MouseEvent e) {
 				if (e.getClickCount() == 2 && localTableModel.getRowCount() > 0) {
 					// cd parent directory
-					if (LocalTable.getSelectedRow() == 0) {
+					if (LocalTable.getSelectedRow() == 0 && !CURRENT_LOCAL_DIRTORY_ROOT) {
 						String parent = getParentDir(LocalTreeComboBox.getSelectedItem().toString());
-						getLocalList(parent);
+						getLocalTreeView(parent);
 					} else if (localTableModel.getValueAt(localTableSorter.convertRowIndexToModel(LocalTable.getSelectedRow()), 2).equals("目錄")) {
-						getLocalList(LocalTreeComboBox.getSelectedItem().toString() + localTableModel.getValueAt(localTableSorter.convertRowIndexToModel(LocalTable.getSelectedRow()), 0));
+						String dirStr = LocalTreeComboBox.getSelectedItem().toString() + localTableModel.getValueAt(localTableSorter.convertRowIndexToModel(LocalTable.getSelectedRow()), 0);
+						getLocalTreeView(dirStr);
 					}
 				}
 			}
@@ -622,7 +669,30 @@ public class MainUI {
 		gbc_RemoteTreeComboBox.gridx = 1;
 		gbc_RemoteTreeComboBox.gridy = 0;
 		RemoteTreePanel.add(RemoteTreeComboBox, gbc_RemoteTreeComboBox);
+		RemoteTreeComboBox.setEditable(true);
 		RemoteTreeComboBox.setFont(new Font("新細明體", Font.PLAIN, 12));
+		RemoteTreeComboBox.addItemListener(new ItemListener() {
+			private String current = "";
+			private boolean firstTime = false;
+
+			public void itemStateChanged(ItemEvent e) {
+				if (firstTime) {
+					if (e.getStateChange() == ItemEvent.SELECTED) {
+						String td = getDirectory(e.getItem().toString());
+						ftpc.doCd(td);
+						String re = ftpc.getResponseGrabber().getResponse();
+						if (re.startsWith("550")) {
+							ftpc.sendMsgPane("無法取得目錄列表", FtpClient.MSG_TYPE.ERROR);
+						} else {
+							current = td;
+							getRemoteList(current, getRemoteParentDir(current));
+						}
+					}
+				} else {
+					firstTime = true;
+				}
+			}
+		});
 
 		RemoteTreeScrollPane = new JScrollPane();
 		gbc_RemoteTreeScrollPane = new GridBagConstraints();
@@ -637,6 +707,7 @@ public class MainUI {
 		RemoteTree = new JTree();
 		RemoteTreeScrollPane.setViewportView(RemoteTree);
 		RemoteTree.setFont(new Font("新細明體", Font.PLAIN, 12));
+		RemoteTree.getSelectionModel().setSelectionMode(TreeSelectionModel.SINGLE_TREE_SELECTION);
 
 		RemotePanel = new JPanel();
 		RemoteSplitPane.setRightComponent(RemotePanel);
@@ -673,18 +744,143 @@ public class MainUI {
 				super.toggleSortOrder(column);
 			}
 		};
+		remoteTableSorter.setComparator(1, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				int modifier = remoteTableSorter.getSortKeys().get(0).getSortOrder() == SortOrder.ASCENDING ? 1 : -1;
+				if (o1.equals("  "))
+					return -modifier;
+				else if (o2.equals("  "))
+					return modifier;
+				if (o1.length() == 0)
+					return -1;
+				else if (o2.length() == 0)
+					return 1;
+				else {
+					long os1 = realFileSize(o1);
+					long os2 = realFileSize(o2);
 
+					if (os1 < os2)
+						return -1;
+					else if (os1 > os2)
+						return 1;
+					return 0;
+				}
+			}
+		});
+		remoteTableSorter.setComparator(3, new Comparator<String>() {
+			@Override
+			public int compare(String o1, String o2) {
+				int modifier = remoteTableSorter.getSortKeys().get(0).getSortOrder() == SortOrder.ASCENDING ? 1 : -1;
+				if (o1.equals("  "))
+					return -modifier;
+				else if (o2.equals("  "))
+					return modifier;
+				else {
+					Date d1, d2;
+					try {
+						d1 = DATE_TIME_FORMAT.parse(o1);
+						d2 = DATE_TIME_FORMAT.parse(o2);
+					} catch (ParseException e) {
+						System.out.println("remoteTableSorter.setComparator(3 ERROR");
+						e.printStackTrace();
+						return 0;
+					}
+					return d1.compareTo(d2);
+				}
+			}
+		});
+		for (int i = 0; i < 6; i++) {
+			if (i != 1 && i != 3) {
+				remoteTableSorter.setComparator(i, new Comparator<String>() {
+					@Override
+					public int compare(String o1, String o2) {
+						int modifier = remoteTableSorter.getSortKeys().get(0).getSortOrder() == SortOrder.ASCENDING ? 1 : -1;
+						if (o1.equals("  ") || o1.equals(".."))
+							return -modifier;
+						else if (o2.equals("  ") || o2.equals(".."))
+							return modifier;
+						else {
+							return o1.compareTo(o2);
+						}
+					}
+				});
+			}
+		}
 		RemoteTable = new JTable();
 		RemoteTable.setFillsViewportHeight(true);
 		RemoteTable.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		RemoteTable.setFont(new Font("新細明體", Font.PLAIN, 12));
 		RemoteTable.setModel(remoteTableModel);
+		RemoteTable.setSelectionBackground(new Color(76, 175, 80));
+		RemoteTable.setSelectionForeground(Color.white);
+		RemoteTable.setRowHeight(25);
+		RemoteTable.setShowGrid(false);
 		RemoteTable.getTableHeader().setReorderingAllowed(false);
+		RemoteTable.setTransferHandler(new TableRowTransferHandler());
+		RemoteTable.setDropMode(DropMode.ON);
+		RemoteTable.setDragEnabled(true);
 		RemoteTable.setRowSorter(remoteTableSorter);
+		RemoteTable.getColumnModel().getColumn(1).setCellRenderer(TABLE_RIGHT_ALIGNMENT_RENDER);
+		RemoteTable.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+				if (e.getValueIsAdjusting()) {
+					int fileCount = 0;
+					int dirCount = 0;
+					long total = 0;
+
+					int[] selectedRow;
+					if (RemoteTable.getSelectedRow() == 0) {
+						selectedRow = new int[RemoteTable.getRowCount() - 1];
+						for (int i = 1; i < RemoteTable.getRowCount(); i++)
+							selectedRow[i - 1] = i;
+					} else {
+						selectedRow = RemoteTable.getSelectedRows();
+					}
+
+					for (int i = 0; i < selectedRow.length; i++) {
+						if (RemoteTable.getValueAt(selectedRow[i], 2) == "目錄")
+							dirCount++;
+						else
+							fileCount++;
+						total += realFileSize((String) RemoteTable.getValueAt(selectedRow[i], 1));
+					}
+
+					String out;
+					if (fileCount > 0 && dirCount == 0)
+						out = "  選取 " + fileCount + " 個檔案. 總共大小: " + readableFileSize(total);
+					else if (fileCount == 0 && dirCount > 0)
+						out = "  選取 " + dirCount + " 個目錄.";
+					else
+						out = "  選取 " + fileCount + " 個檔案與 " + dirCount + " 個目錄. 總共大小: " + readableFileSize(total);
+					TfRemoteState.setText(out);
+				}
+			}
+		});
+		RemoteTable.addMouseListener(new MouseAdapter() {
+			@Override
+			public void mouseClicked(MouseEvent e) {
+				if (e.getClickCount() == 2 && remoteTableModel.getRowCount() > 0) {
+					// cd parent directory
+					String current = RemoteTreeComboBox.getSelectedItem().toString();
+					String parent = getRemoteParentDir(current);
+					if (parent.length() == 0)
+						parent = FtpClient.SERVER_ROOT_DIR;
+
+					if (RemoteTable.getSelectedRow() == 0) {
+						ftpc.doCd(parent);
+						getRemoteList(parent, getRemoteParentDir(parent));
+					} else if (remoteTableModel.getValueAt(remoteTableSorter.convertRowIndexToModel(RemoteTable.getSelectedRow()), 2).equals("目錄")) {
+						String dirStr = current + remoteTableModel.getValueAt(remoteTableSorter.convertRowIndexToModel(RemoteTable.getSelectedRow()), 0);
+						ftpc.doCd(dirStr);
+						getRemoteList(dirStr, parent);
+					}
+				}
+			}
+		});
 		RemoteTableScrollPane.setViewportView(RemoteTable);
 
 		TfRemoteState = new JTextField();
-
 		gbc_TfRemoteState = new GridBagConstraints();
 		gbc_TfRemoteState.weightx = 1.0;
 		gbc_TfRemoteState.ipadx = 1;
@@ -759,6 +955,14 @@ public class MainUI {
 		TfPort.setBounds(745, 10, 120, 30);
 		InputPanel.add(TfPort);
 
+		TfHost.setText("haoecec.ddns.net");
+		TfUsername.setText("haoecec-ftp");
+		TfPassword.setText("GCL6M3VU62K7EC2FTP");
+
+		//		TfHost.setText("120.114.186.4");
+		//		TfUsername.setText("summer");
+		//		TfPassword.setText("nutncsie");
+
 		BtnConnection = new JButton("連線");
 		BtnConnection.setFont(new Font("微軟正黑體", Font.BOLD, 14));
 		BtnConnection.setBounds(880, 10, 100, 30);
@@ -766,9 +970,6 @@ public class MainUI {
 		BtnConnection.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				TfHost.setText("haoecec.ddns.net");
-				TfUsername.setText("haoecec-ftp");
-				TfPassword.setText("GCL6M3VU62K7EC2FTP");
 				String host = TfHost.getText();
 				String user = TfUsername.getText();
 				String pw = new String(TfPassword.getPassword());
@@ -783,7 +984,29 @@ public class MainUI {
 					}
 					ftpc.doOpen(host, 0);
 					ftpc.doLogin(user, pw);
-					ftpc.doLs();
+					ftpc.doPwd();
+					RemoteTreeComboBox.removeAllItems();
+					getRemoteList(FtpClient.SERVER_ROOT_DIR, FtpClient.SERVER_ROOT_DIR);
+					//					ftpc.doNls();
+					//					File uptest = new File("/media/hao/WD500/Linux_Download/ftptest/123");
+					//					uploadProcessor(uptest, "/networkTest/ftptest/");
+					//					ftpc.doCd("/networkTest/ftptest/" + uptest.getName());
+					//					getRemoteList("/networkTest/ftptest/" + uptest.getName(), "/networkTest/ftptest/");
+
+					//					ftpc.doCd("/networkTest/ftptest/");
+					//					Vector<FtpFile> fl = ftpc.doLs();
+					//					FtpFile tf = null;
+					//					for (int i = 0; i < fl.size(); i++)
+					//						if (fl.get(i).getName().equals("123")) {
+					//							tf = fl.get(i);
+					//							break;
+					//						}
+					//					if (tf != null) {
+					//						String lcd = LocalTreeComboBox.getSelectedItem().toString();
+					//						downloadProcessor(tf, "/networkTest/ftptest/", lcd);
+					//					} else {
+					//						System.out.println("123 not found");
+					//					}
 				}
 			}
 		});
@@ -796,12 +1019,11 @@ public class MainUI {
 		gbc_ResponseScrollPane.gridx = 0;
 		gbc_ResponseScrollPane.gridy = 1;
 		UpPanel.add(ResponseScrollPane, gbc_ResponseScrollPane);
+		ResponseScrollPane.setAutoscrolls(true);
 
 		TaResponses = new JTextPane();
 		TaResponses.setEditable(false);
-		//		TaResponses.setTabSize(4);
 		TaResponses.setFont(new Font("微軟正黑體", Font.PLAIN, 13));
-		//		TaResponses.setLineWrap(true);
 		ResponseScrollPane.setViewportView(TaResponses);
 	}
 
@@ -812,52 +1034,81 @@ public class MainUI {
 		try {
 			Document doc = tp.getDocument();
 			doc.insertString(doc.getLength(), msg, aset);
-		} catch (Exception e) {
+			tp.setCaretPosition(doc.getLength());
+			//			tp.paintImmediately(tp.getBounds());
+		} catch (Exception e1) {
 			System.out.println("MainUI.append ERROR");
-			e.printStackTrace();
+			e1.printStackTrace();
+		}
+	}
+
+	public void getLocalTreeView(String dir) {
+		Vector<File> fs = new Vector<File>();
+		fs.addElement(new File(dir));
+		String parent = getParentDir(dir);
+		while (parent.length() > 0) {
+			fs.insertElementAt(new File(parent), 0);
+			parent = getParentDir(parent);
+		}
+		TreePath tps = new TreePath(fs.toArray());
+		LocalTree.setSelectionPath(tps);
+		LocalTree.scrollPathToVisible(tps);
+	}
+
+	// root is the file or the directory attempted to upload
+	// remoteRoot is the directory of the server
+	public void uploadProcessor(File root, String remoteRoot) {
+		if (root.isFile()) {
+			ftpc.doPut(root, remoteRoot);
+			if (!ftpc.getResponseGrabber().getResponse().startsWith("226"))
+				ftpc.sendMsgPane("檔案傳輸成功, 已傳輸 " + readableFileSize(root.length()), FtpClient.MSG_TYPE.STATUS);
+		} else {
+			File[] fl = root.listFiles();
+			for (int i = 0; i < fl.length; i++) {
+				String nd = remoteRoot + fl[i].getName();
+				if (fl[i].isDirectory()) {
+					// mkdir
+					if (!ftpc.getResponseGrabber().getResponse().startsWith("250"))
+						ftpc.doMkd(remoteRoot + fl[i].getName());
+					uploadProcessor(fl[i], getRemoteDir(nd));
+				} else {
+					// upload file
+					ftpc.doPut(fl[i], remoteRoot);
+					if (!ftpc.getResponseGrabber().getResponse().startsWith("226"))
+						ftpc.sendMsgPane("檔案傳輸成功, 已傳輸 " + readableFileSize(fl[i].length()), FtpClient.MSG_TYPE.STATUS);
+				}
+			}
+		}
+	}
+
+	//	tf is the target file to download
+	//	remoteRoot is the directory where the target file is
+	public void downloadProcessor(FtpFile tf, String remoteRoot, String localRoot) {
+		if (tf.isFile()) {
+			// doGet to download the file
+			ftpc.doGet(tf.getName(), localRoot, remoteRoot);
+		} else {
+			String scd = getRemoteDir(remoteRoot + tf.getName());
+			String lcd = getDirectory(localRoot + tf.getName());
+			// make the directory in localRoot
+			File tmpCreate = new File(localRoot + tf.getName());
+			if (!tmpCreate.exists())
+				tmpCreate.mkdirs();
+
+			// change the remote directory
+			ftpc.doCd(remoteRoot + tf.getName());
+
+			// get the changed directory list
+			Vector<FtpFile> tfl = ftpc.doLs();
+			for (int i = 0; i < tfl.size(); i++) {
+				if (tfl.get(i).isDirectory()) {
+					// if directory, download the files or directories belong to the directory
+					downloadProcessor(tfl.get(i), scd, lcd);
+				} else {
+					// directly download the file
+					ftpc.doGet(tfl.get(i).getName(), lcd, scd);
+				}
+			}
 		}
 	}
 }
-
-//public class MainUI {
-//	private String hostStr = "haoecec.ddns.net";
-//	private String userStr = "haoecec-ftp";
-//	private String pwdStr = "GCL6M3VU62K7EC2FTP";
-//
-//	public static void main(String[] args) throws InterruptedException {
-//		FtpClient ftpc = new FtpClient();
-//		MainUI win = new MainUI();
-//
-//		ftpc.doOpen(win.getHostStr(), 0);
-//		ftpc.doLogin(win.getUserStr(), win.getPwdStr());
-//		ftpc.doLs();
-//
-//		ftpc.doGet("2.txt", "/media/hao/WD500/Linux_Download");
-//		ftpc.doPut("/media/hao/WD500/Linux_Download", "12311623_988002267924209_1031219819_o.jpg");
-//		ftpc.doLs();
-//		ftpc.doCd("networkTest");
-//		ftpc.doLs();
-//		ftpc.doPut("/media/hao/WD500/Linux_Download", "12311623_988002267924209_1031219819_o.jpg");
-//		ftpc.doLs();
-//
-//		Thread.sleep(5000);
-//
-//		ftpc.doQuit();
-//	}
-//
-//	public MainUI() {
-//
-//	}
-//
-//	public String getHostStr() {
-//		return hostStr;
-//	}
-//
-//	public String getPwdStr() {
-//		return pwdStr;
-//	}
-//
-//	public String getUserStr() {
-//		return userStr;
-//	}
-//}

@@ -43,8 +43,19 @@ public class RemoteTableModel extends AbstractTableModel {
 			return (String) o[col];
 		} catch (Exception e) {
 			System.out.println("RemoteTableModel getValueAt ERROR");
+			e.printStackTrace();
 		}
 		return new String();
+	}
+
+	public Object getRowData(int row) {
+		try {
+			return (Object) this.data.get(row);
+		} catch (Exception e) {
+			System.out.println("RemoteTableModel getRowData ERROR");
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	public void setValueAt(Object value, int row, int col) {
@@ -55,24 +66,29 @@ public class RemoteTableModel extends AbstractTableModel {
 
 	public void setAllValueAt(Object obj, int row) {
 		Object[] o = this.data.get(row);
-		FileInfo f = (FileInfo) obj;
+		FtpFile f = (FtpFile) obj;
 		o[0] = f.getName();
 		o[1] = f.getSize();
 		o[2] = f.getType();
 		o[3] = f.getLastTime();
 		o[4] = f.getAuth();
-		o[5] = f.getOwnerGroup();
+		o[5] = f.getOwner() + " " + f.getGroup();
 		fireTableDataChanged();
 	}
 
-	public void insertData(FileInfo f) {
-		this.data.addElement(new Object[] { f.getName(), f.getSize(), f.getType(), f.getLastTime(), f.getAuth(), f.getOwnerGroup() });
+	public void insertRowAt(int row, FtpFile f) {
+		this.data.insertElementAt(new Object[] { f.getName(), f.getSize(), f.getType(), f.getLastTime(), f.getAuth(), f.getOwner() + " " + f.getGroup() }, row);
 		fireTableDataChanged();
 	}
 
-	public void insertData(Vector<FileInfo> fs) {
+	public void insertData(FtpFile f) {
+		this.data.addElement(new Object[] { f.getName(), f.getSize(), f.getType(), f.getLastTime(), f.getAuth(), f.getOwner() + " " + f.getGroup() });
+		fireTableDataChanged();
+	}
+
+	public void insertData(Vector<FtpFile> fs) {
 		for (int i = 0; i < fs.size(); i++)
-			this.data.addElement(new Object[] { fs.get(i).getName(), fs.get(i).getSize(), fs.get(i).getType(), fs.get(i).getLastTime(), fs.get(i).getAuth(), fs.get(i).getOwnerGroup() });
+			this.data.addElement(new Object[] { fs.get(i).getName(), fs.get(i).getSize(), fs.get(i).getType(), fs.get(i).getLastTime(), fs.get(i).getAuth(), fs.get(i).getOwner() + " " + fs.get(i).getGroup() });
 		fireTableDataChanged();
 	}
 

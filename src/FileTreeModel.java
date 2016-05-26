@@ -65,7 +65,6 @@ public class FileTreeModel implements TreeModel {
 			}
 		}
 		return -1;
-
 	}
 
 	@Override

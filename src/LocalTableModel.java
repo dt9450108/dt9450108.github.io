@@ -45,7 +45,17 @@ public class LocalTableModel extends AbstractTableModel {
 			System.out.println("LocalTableModel getValueAt ERROR");
 			e.printStackTrace();
 		}
-		return new String();
+		return null;
+	}
+
+	public Object getRowData(int row) {
+		try {
+			return (Object) this.data.get(row);
+		} catch (Exception e) {
+			System.out.println("LocalTableModel getRowData ERROR");
+			e.printStackTrace();
+		}
+		return null;
 	}
 
 	public void setValueAt(Object value, int row, int col) {
