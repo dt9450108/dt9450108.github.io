@@ -1,10 +1,16 @@
 import java.awt.Color;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.Transferable;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.awt.dnd.DragSource;
+import java.awt.event.ActionEvent;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ItemEvent;
@@ -12,19 +18,28 @@ import java.awt.event.ItemListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 
+import javax.activation.ActivationDataFlavor;
+import javax.activation.DataHandler;
+import javax.swing.AbstractAction;
+import javax.swing.Action;
+import javax.swing.ActionMap;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DropMode;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -36,9 +51,11 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.JTree;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.SortOrder;
 import javax.swing.SwingConstants;
+import javax.swing.TransferHandler;
 import javax.swing.border.LineBorder;
 import javax.swing.border.MatteBorder;
 import javax.swing.event.ListSelectionEvent;
@@ -58,6 +75,7 @@ import javax.swing.tree.TreeSelectionModel;
 
 public class MainUI {
 	public static SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
+	public static ImageIcon icon = new ImageIcon(MainUI.class.getResource("/icon.png"));
 	private JFrame frmHaoFtpClient;
 
 	private JPanel LocalPanel;
@@ -161,13 +179,8 @@ public class MainUI {
 
 	private void getRemoteList(String dirStr, String parent) {
 		Vector<FtpFile> ftpFiles = ftpc.doLs();
-		for (int i = 0; i < ftpFiles.size(); i++) {
+		for (int i = 0; i < ftpFiles.size(); i++)
 			ftpFiles.get(i).setParent(parent);
-			//			System.out.println(ftpFiles.get(i).toString());
-		}
-
-		//		if (FtpClient.SERVER_ROOT_DIR.equals(dirStr))
-		//			dirStr = FtpClient.SERVER_ROOT_DIR;
 
 		dirStr = getRemoteDir(dirStr);
 		int dirStrPos = ((DefaultComboBoxModel<String>) RemoteTreeComboBox.getModel()).getIndexOf(dirStr);
@@ -311,24 +324,24 @@ public class MainUI {
 
 	private String getParentDir(String cur) {
 		int lastSeparator = cur.lastIndexOf(File.separator, cur.length() - 2);
-		return cur.substring(0, lastSeparator + 1);
+		return cur.substring(0, lastSeparator + 1).replaceAll("\\/+", "/");
 	}
 
 	private String getDirectory(String cur) {
 		if (cur.charAt(cur.length() - 1) != File.separatorChar)
 			cur += File.separator;
-		return cur;
+		return cur.replaceAll("\\/+", "/");
 	}
 
 	private String getRemoteParentDir(String cur) {
 		int lastSeparator = cur.lastIndexOf("/", cur.length() - 2);
-		return cur.substring(0, lastSeparator + 1);
+		return cur.substring(0, lastSeparator + 1).replaceAll("\\/+", "/");
 	}
 
 	private String getRemoteDir(String cur) {
 		if (cur.charAt(cur.length() - 1) != '/')
 			cur += "/";
-		return cur;
+		return cur.replaceAll("\\/+", "/");
 	}
 
 	private String getRoot() {
@@ -340,7 +353,8 @@ public class MainUI {
 	private void initialize() {
 		frmHaoFtpClient = new JFrame();
 		frmHaoFtpClient.setTitle("Hao Ftp Client");
-		frmHaoFtpClient.setBounds(100, 100, 990, 600);
+		frmHaoFtpClient.setIconImage(icon.getImage());
+		frmHaoFtpClient.setSize(1005, 600);
 		frmHaoFtpClient.setMinimumSize(new Dimension(200, 600));
 		frmHaoFtpClient.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frmHaoFtpClient.getContentPane().setBackground(Color.white);
@@ -353,7 +367,7 @@ public class MainUI {
 				int w = frmHaoFtpClient.getWidth();
 
 				MidSplitPane.setDividerLocation(w >> 1);
-				DownSplitPane.setSize(w, h);
+				DownSplitPane.setSize(w - 15, h);
 				DownSplitPane.setDividerLocation((int) (h * 0.8));
 				DownSplitPane.updateUI();
 			}
@@ -420,11 +434,10 @@ public class MainUI {
 				if (e.getStateChange() == ItemEvent.SELECTED) {
 					String td = getDirectory(e.getItem().toString());
 
-					if (new File(td).exists()) {
+					if (new File(td).exists())
 						current = td;
-					} else {
+					else
 						JOptionPane.showMessageDialog(frmHaoFtpClient, "\"" + td + "\" 不存在或是無法存取.");
-					}
 					getLocalList(current);
 					getLocalTreeView(current);
 				}
@@ -609,7 +622,7 @@ public class MainUI {
 		LocalTable.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2 && localTableModel.getRowCount() > 0) {
+				if (e.getClickCount() == 2 && localTableModel.getRowCount() > 0 && LocalTable.getSelectedRow() >= 0) {
 					// cd parent directory
 					if (LocalTable.getSelectedRow() == 0 && !CURRENT_LOCAL_DIRTORY_ROOT) {
 						String parent = getParentDir(LocalTreeComboBox.getSelectedItem().toString());
@@ -621,6 +634,16 @@ public class MainUI {
 				}
 			}
 		});
+
+		ActionMap LocalTableMap = LocalTable.getActionMap();
+		AbstractAction dummy = new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+			}
+		};
+		LocalTableMap.put(TransferHandler.getCutAction().getValue(Action.NAME), dummy);
+		LocalTableMap.put(TransferHandler.getCopyAction().getValue(Action.NAME), dummy);
+		LocalTableMap.put(TransferHandler.getPasteAction().getValue(Action.NAME), dummy);
 		LocalTableScrollPane.setViewportView(LocalTable);
 
 		TfLocalState = new JTextField();
@@ -678,7 +701,7 @@ public class MainUI {
 			public void itemStateChanged(ItemEvent e) {
 				if (firstTime) {
 					if (e.getStateChange() == ItemEvent.SELECTED) {
-						String td = getDirectory(e.getItem().toString());
+						String td = getRemoteDir(e.getItem().toString());
 						ftpc.doCd(td);
 						String re = ftpc.getResponseGrabber().getResponse();
 						if (re.startsWith("550")) {
@@ -860,7 +883,7 @@ public class MainUI {
 		RemoteTable.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				if (e.getClickCount() == 2 && remoteTableModel.getRowCount() > 0) {
+				if (e.getClickCount() == 2 && remoteTableModel.getRowCount() > 0 && RemoteTable.getSelectedRow() >= 0) {
 					// cd parent directory
 					String current = RemoteTreeComboBox.getSelectedItem().toString();
 					String parent = getRemoteParentDir(current);
@@ -874,6 +897,33 @@ public class MainUI {
 						String dirStr = current + remoteTableModel.getValueAt(remoteTableSorter.convertRowIndexToModel(RemoteTable.getSelectedRow()), 0);
 						ftpc.doCd(dirStr);
 						getRemoteList(dirStr, parent);
+					}
+				}
+			}
+		});
+		ActionMap RemoteTableMap = RemoteTable.getActionMap();
+		RemoteTableMap.put(TransferHandler.getCutAction().getValue(Action.NAME), dummy);
+		RemoteTableMap.put(TransferHandler.getCopyAction().getValue(Action.NAME), dummy);
+		RemoteTableMap.put(TransferHandler.getPasteAction().getValue(Action.NAME), dummy);
+		RemoteTable.getInputMap().put(KeyStroke.getKeyStroke("DELETE"), "deleteRow");
+		RemoteTable.getActionMap().put("deleteRow", new AbstractAction() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				int response = JOptionPane.showConfirmDialog(frmHaoFtpClient, "真的要從伺服器刪除選擇之檔案與其內容嗎？", "需要確認", JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+				if (response == JOptionPane.YES_OPTION) {
+					JTable t = (JTable) e.getSource();
+					RemoteTableModel model = (RemoteTableModel) t.getModel();
+					TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) t.getRowSorter();
+					String remoteCurrentDir = RemoteTreeComboBox.getSelectedItem().toString();
+					int[] rows = t.getSelectedRows();
+					for (int i = 0; i < rows.length; i++) {
+						FtpFile tf = new FtpFile();
+						Object[] o = (Object[]) model.getRowData(sorter.convertRowIndexToModel(rows[i]));
+						tf.setName((String) o[0]);
+						tf.setDirectory(o[2].equals("目錄"));
+						deleteProcessor(tf, remoteCurrentDir);
+						ftpc.doCd(remoteCurrentDir);
+						getRemoteList(remoteCurrentDir, getRemoteParentDir(remoteCurrentDir));
 					}
 				}
 			}
@@ -963,6 +1013,10 @@ public class MainUI {
 		//		TfUsername.setText("summer");
 		//		TfPassword.setText("nutncsie");
 
+		//		TfHost.setText("127.0.0.1");
+		//		TfUsername.setText("user1");
+		//		TfPassword.setText("123");
+
 		BtnConnection = new JButton("連線");
 		BtnConnection.setFont(new Font("微軟正黑體", Font.BOLD, 14));
 		BtnConnection.setBounds(880, 10, 100, 30);
@@ -987,26 +1041,11 @@ public class MainUI {
 					ftpc.doPwd();
 					RemoteTreeComboBox.removeAllItems();
 					getRemoteList(FtpClient.SERVER_ROOT_DIR, FtpClient.SERVER_ROOT_DIR);
-					//					ftpc.doNls();
-					//					File uptest = new File("/media/hao/WD500/Linux_Download/ftptest/123");
-					//					uploadProcessor(uptest, "/networkTest/ftptest/");
-					//					ftpc.doCd("/networkTest/ftptest/" + uptest.getName());
-					//					getRemoteList("/networkTest/ftptest/" + uptest.getName(), "/networkTest/ftptest/");
 
-					//					ftpc.doCd("/networkTest/ftptest/");
-					//					Vector<FtpFile> fl = ftpc.doLs();
-					//					FtpFile tf = null;
-					//					for (int i = 0; i < fl.size(); i++)
-					//						if (fl.get(i).getName().equals("123")) {
-					//							tf = fl.get(i);
-					//							break;
-					//						}
-					//					if (tf != null) {
-					//						String lcd = LocalTreeComboBox.getSelectedItem().toString();
-					//						downloadProcessor(tf, "/networkTest/ftptest/", lcd);
-					//					} else {
-					//						System.out.println("123 not found");
-					//					}
+					//					FtpFile df = new FtpFile();
+					//					df.setName("123");
+					//					df.setDirectory(true);
+					//					deleteProcessor(df, "/networkTest/ftptest/");
 				}
 			}
 		});
@@ -1035,7 +1074,6 @@ public class MainUI {
 			Document doc = tp.getDocument();
 			doc.insertString(doc.getLength(), msg, aset);
 			tp.setCaretPosition(doc.getLength());
-			//			tp.paintImmediately(tp.getBounds());
 		} catch (Exception e1) {
 			System.out.println("MainUI.append ERROR");
 			e1.printStackTrace();
@@ -1063,20 +1101,12 @@ public class MainUI {
 			if (!ftpc.getResponseGrabber().getResponse().startsWith("226"))
 				ftpc.sendMsgPane("檔案傳輸成功, 已傳輸 " + readableFileSize(root.length()), FtpClient.MSG_TYPE.STATUS);
 		} else {
+			// make root directory
+			String ndir = remoteRoot + root.getName();
+			ftpc.doMkd(ndir);
 			File[] fl = root.listFiles();
 			for (int i = 0; i < fl.length; i++) {
-				String nd = remoteRoot + fl[i].getName();
-				if (fl[i].isDirectory()) {
-					// mkdir
-					if (!ftpc.getResponseGrabber().getResponse().startsWith("250"))
-						ftpc.doMkd(remoteRoot + fl[i].getName());
-					uploadProcessor(fl[i], getRemoteDir(nd));
-				} else {
-					// upload file
-					ftpc.doPut(fl[i], remoteRoot);
-					if (!ftpc.getResponseGrabber().getResponse().startsWith("226"))
-						ftpc.sendMsgPane("檔案傳輸成功, 已傳輸 " + readableFileSize(fl[i].length()), FtpClient.MSG_TYPE.STATUS);
-				}
+				uploadProcessor(fl[i], getRemoteDir(ndir));
 			}
 		}
 	}
@@ -1109,6 +1139,160 @@ public class MainUI {
 					ftpc.doGet(tfl.get(i).getName(), lcd, scd);
 				}
 			}
+		}
+	}
+
+	// tf is the file or directory
+	// remoteRoot is the directory where tf is
+	public void deleteProcessor(FtpFile tf, String remoteRoot) {
+		if (tf.isFile()) {
+			ftpc.doDelete(remoteRoot + tf.getName());
+		} else {
+			String d = getRemoteDir(remoteRoot + tf.getName());
+			ftpc.doCd(d);
+			Vector<FtpFile> tfl = ftpc.doLs();
+			for (int i = 0; i < tfl.size(); i++) {
+				if (tfl.get(i).isDirectory()) {
+					deleteProcessor(tfl.get(i), d);
+				} else {
+					ftpc.doDelete(d + tfl.get(i).getName());
+				}
+			}
+			ftpc.doRmd(d);
+		}
+	}
+
+	public class TableRowTransferHandler extends TransferHandler {
+		private final DataFlavor localObjectFlavor;
+
+		public TableRowTransferHandler() {
+			super();
+			localObjectFlavor = new ActivationDataFlavor(Object[].class, DataFlavor.javaJVMLocalObjectMimeType, "Table rows");
+		}
+
+		@Override
+		protected Transferable createTransferable(JComponent c) {
+			// c is the source
+			JTable st = (JTable) c;
+			List<Object> list = new ArrayList<>();
+			int[] idxs = st.getSelectedRows();
+			if (st.getModel() instanceof LocalTableModel) {
+				LocalTableModel model = (LocalTableModel) st.getModel();
+				TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) st.getRowSorter();
+				for (int i : idxs)
+					list.add(model.getRowData(sorter.convertRowIndexToModel(i)));
+			} else if (st.getModel() instanceof RemoteTableModel) {
+				RemoteTableModel model = (RemoteTableModel) st.getModel();
+				TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) st.getRowSorter();
+				for (int i : idxs)
+					list.add(model.getRowData(sorter.convertRowIndexToModel(i)));
+			}
+
+			Object[] transferedObjects = list.toArray();
+			return new DataHandler(transferedObjects, localObjectFlavor.getMimeType());
+		}
+
+		@Override
+		public boolean canImport(TransferSupport info) {
+			// info is the destination
+			JTable st = (JTable) info.getComponent();
+			boolean isDropable = info.isDrop() && info.isDataFlavorSupported(localObjectFlavor);
+			st.setCursor(isDropable ? DragSource.DefaultMoveDrop : DragSource.DefaultMoveNoDrop);
+			return isDropable;
+		}
+
+		@Override
+		public int getSourceActions(JComponent c) {
+			return MOVE;
+		}
+
+		@Override
+		public boolean importData(TransferSupport info) {
+			if (!canImport(info))
+				return false;
+			TransferHandler.DropLocation tdl = info.getDropLocation();
+			if (!(tdl instanceof JTable.DropLocation))
+				return false;
+			JTable.DropLocation dl = (JTable.DropLocation) tdl;
+
+			JTable st = (JTable) info.getComponent();
+			int destIndex = dl.getRow();
+			boolean isDirectory = true;
+			int destination = 0;
+			int source = 0;
+			String localCurrentDir = LocalTreeComboBox.getSelectedItem().toString();
+			String remoteCurrentDir = RemoteTreeComboBox.getSelectedItem().toString();
+			String destDir = "";
+
+			if (st.getModel() instanceof LocalTableModel) {
+				LocalTableModel model = (LocalTableModel) st.getModel();
+				TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) st.getRowSorter();
+				if (destIndex >= 0 && destIndex <= model.getRowCount()) {
+					destIndex = sorter.convertRowIndexToModel(destIndex);
+					if (model.getValueAt(destIndex, 2).equals("目錄")) {
+						destDir = getDirectory(localCurrentDir + model.getValueAt(destIndex, 0));
+					} else {
+						isDirectory = false;
+						destDir = localCurrentDir;
+					}
+				} else {
+					destDir = localCurrentDir;
+				}
+				destination = 1;
+			} else if (st.getModel() instanceof RemoteTableModel) {
+				RemoteTableModel model = (RemoteTableModel) st.getModel();
+				TableRowSorter<TableModel> sorter = (TableRowSorter<TableModel>) st.getRowSorter();
+				if (destIndex >= 0 && destIndex <= model.getRowCount()) {
+					destIndex = sorter.convertRowIndexToModel(destIndex);
+					if (model.getValueAt(destIndex, 2).equals("目錄")) {
+						destDir = getRemoteDir(remoteCurrentDir + model.getValueAt(destIndex, 0));
+					} else {
+						isDirectory = false;
+						destDir = remoteCurrentDir;
+					}
+				} else {
+					destDir = remoteCurrentDir;
+				}
+				destination = 2;
+			}
+
+			// change the cursor icon
+			st.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+
+			// get the source table data
+			try {
+				Object[] values = (Object[]) info.getTransferable().getTransferData(localObjectFlavor);
+				source = ((Object[]) values[0]).length == 4 ? 1 : 2;
+
+				if (source == 1 && destination == 2) {
+					for (int i = 0; i < values.length; i++) {
+						Object[] l = (Object[]) values[i];
+						File uf = new File(localCurrentDir + l[0]);
+						uploadProcessor(uf, destDir);
+						ftpc.doCd(destDir);
+						getRemoteList(destDir, getRemoteParentDir(destDir));
+					}
+				} else if (source == 2 && destination == 1) {
+					for (int i = 0; i < values.length; i++) {
+						Object[] l = (Object[]) values[i];
+						FtpFile df = new FtpFile((String) l[0], "", "", "", "", "");
+						df.setDirectory(l[2].toString().equals("目錄"));
+						downloadProcessor(df, remoteCurrentDir, destDir);
+						getLocalList(destDir);
+						getLocalTreeView(destDir);
+					}
+				}
+				return true;
+			} catch (UnsupportedFlavorException | IOException ex) {
+				System.out.println("importData ERROR");
+				ex.printStackTrace();
+			}
+			return false;
+		}
+
+		@Override
+		protected void exportDone(JComponent c, Transferable data, int action) {
+			c.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
 		}
 	}
 }

@@ -124,7 +124,7 @@ public class FtpClient {
 
 			this.server = new Socket(ip, port);
 			this.serverOut = new PrintWriter(this.server.getOutputStream());
-			this.serverIn = new BufferedReader(new InputStreamReader(this.server.getInputStream()));
+			this.serverIn = new BufferedReader(new InputStreamReader(this.server.getInputStream(), "UTF-8"));
 			this.responseGrabber = new ResponseGrabber(this.serverIn);
 			this.responseGrabberThread = new Thread(this.responseGrabber);
 			this.responseGrabberThread.start();
@@ -178,7 +178,7 @@ public class FtpClient {
 		Socket data = dataConnect(cmd);
 		try {
 			if (data != null) {
-				BufferedReader in = new BufferedReader(new InputStreamReader(data.getInputStream()));
+				BufferedReader in = new BufferedReader(new InputStreamReader(data.getInputStream(), "UTF-8"));
 				String line;
 				while ((line = in.readLine()) != null) {
 					lists.addElement(getFtpFile(line));
@@ -198,7 +198,7 @@ public class FtpClient {
 		Socket data = dataConnect("NLST");
 		try {
 			if (data != null) {
-				BufferedReader in = new BufferedReader(new InputStreamReader(data.getInputStream()));
+				BufferedReader in = new BufferedReader(new InputStreamReader(data.getInputStream(), "UTF-8"));
 				String line;
 				while ((line = in.readLine()) != null) {
 					System.out.println(line);
