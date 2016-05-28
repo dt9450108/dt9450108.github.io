@@ -1,12 +1,14 @@
 import java.awt.Color;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -20,15 +22,15 @@ import java.util.Vector;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.swing.JOptionPane;
+
 public class FtpClient {
 	public static boolean CONNECTION_STATE = false;
 	public static boolean LIST_CMD_TYPE = false;
 	public static String SERVER_ROOT_DIR = "/";
 	public static String SERVER_CURRENT_DIR = "/";
-	public static Pattern UNIX_FTP_REGEX = Pattern.compile("(?<dir>[\\-d])(?<permission>([-rwxst]){9})\\s+\\d+\\s+(?<owner>\\d{3})+\\s+(?<group>\\d{3})+\\s+(?<size>\\d+)\\s+(?<timestamp>\\w+\\s+\\d+\\s+\\d{1,2}:\\d{2})\\s+(?<name>.+)");
-	public static Pattern WIN_FTP_REGEX = Pattern.compile("type=(?<dir>[\\w]{3,4});modify=(?<timestamp>\\d+);((?:size=(?<size>\\d+));)?\\s+(?<name>.+)");
-	private boolean passive = true;
-	private String HOST;
+	public final static Pattern UNIX_FTP_REGEX = Pattern.compile("(?<dir>[\\-d])(?<permission>([-rwxst]){9})\\s+\\d+\\s+(?<owner>\\d+)+\\s+(?<group>\\d+)+\\s+(?<size>\\d+)\\s+(?<timestamp>\\w+\\s+\\d+\\s+\\d{1,2}:\\d{2})\\s+(?<name>.+)");
+	public final static Pattern WIN_FTP_REGEX = Pattern.compile("type=(?<dir>[\\w]{3,4});modify=(?<timestamp>\\d+);((?:size=(?<size>\\d+));)?\\s+(?<name>.+)");
 	private int CMD_PORT = 21;
 	private Socket server;
 	private PrintWriter serverOut;
@@ -52,7 +54,7 @@ public class FtpClient {
 		this.responseGrabber.setOneresponse(true);
 		this.responseGrabber.setTworesponse(true);
 		if (cmd != null) {
-			serverOut.print(cmd + "\r\n");
+			serverOut.print(cmd + "\n");
 			serverOut.flush();
 			if (cmd.startsWith("PASS")) {
 				cmd = "**************";
@@ -68,20 +70,10 @@ public class FtpClient {
 		doBinary();
 		Socket dataSocket = null;
 		try {
-			if (!this.passive) {
-				// Active mode
-				String localIp = InetAddress.getLocalHost().getHostAddress().replace('.', ',');
-				String port = localIp + "," + (((server.getLocalPort()) / 256) & 0xff) + "," + (server.getLocalPort() & 0xff);
-				send("PORT " + port);
-				ServerSocket serverDataSocket = new ServerSocket(0, 1);
-				send(cmd);
-				dataSocket = serverDataSocket.accept();
-				serverDataSocket.close();
-			} else {
-				// Passive mode
-				send("PASV");
-				String port = this.responseGrabber.getResponse();
-
+			// Passive mode
+			send("PASV");
+			String port = this.responseGrabber.getResponse();
+			if (port.startsWith("227")) {
 				int start = port.indexOf('(');
 				int end = port.indexOf(')');
 				port = port.substring(start + 1, end);
@@ -97,16 +89,38 @@ public class FtpClient {
 
 				dataSocket = new Socket(ip, dataPort);
 				send(cmd);
+			} else {
+				// Active mode
+				String localIp = InetAddress.getLocalHost().getHostAddress().replace('.', ',');
+				String activePort = localIp + "," + (((server.getLocalPort()) / 256) & 0xff) + "," + (server.getLocalPort() & 0xff);
+				send("PORT " + activePort);
+				ServerSocket serverDataSocket = new ServerSocket(0, 1);
+				send(cmd);
+				dataSocket = serverDataSocket.accept();
+				serverDataSocket.close();
+				if (!this.responseGrabber.getResponse().startsWith("200")) {
+					// local active mode
+					localIp = InetAddress.getLoopbackAddress().getHostAddress().replace('.', ',');
+					activePort = localIp + "," + (((server.getLocalPort()) / 256) & 0xff) + "," + (server.getLocalPort() & 0xff);
+					send("PORT " + activePort);
+					serverDataSocket = new ServerSocket(0, 1);
+					send(cmd);
+					dataSocket = serverDataSocket.accept();
+					serverDataSocket.close();
+					if (!this.responseGrabber.getResponse().startsWith("200")) {
+						dataSocket = null;
+						sendMsgPane("主動與被動模式皆無法運行，請確認伺服器是否正確", MSG_TYPE.ERROR);
+					}
+				}
 			}
 		} catch (Exception e) {
-			System.out.println("dataConnect " + (!this.passive ? "active mode" : "passive mode") + " ERROR");
+			System.out.println("dataConnect ERROR");
 			e.printStackTrace();
 		}
 		return dataSocket;
 	}
 
 	public boolean doOpen(String host, int port) {
-		this.HOST = host;
 		try {
 			String ip = host;
 			if (!host.matches("(?:[0-9]{1,3}\\.){3}[0-9]{1,3}")) {
@@ -123,7 +137,7 @@ public class FtpClient {
 			sendMsgPane("正在連線到 " + ip + ":" + port + "...", FtpClient.MSG_TYPE.STATUS);
 
 			this.server = new Socket(ip, port);
-			this.serverOut = new PrintWriter(this.server.getOutputStream());
+			this.serverOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(this.server.getOutputStream(), "UTF-8")), true);
 			this.serverIn = new BufferedReader(new InputStreamReader(this.server.getInputStream(), "UTF-8"));
 			this.responseGrabber = new ResponseGrabber(this.serverIn);
 			this.responseGrabberThread = new Thread(this.responseGrabber);
@@ -133,9 +147,15 @@ public class FtpClient {
 			String r = this.responseGrabber.getResponse();
 			if (r.startsWith("220"))
 				CONNECTION_STATE = true;
+			else {
+				sendMsgPane("無法連線到伺服器", FtpClient.MSG_TYPE.ERROR);
+				JOptionPane.showMessageDialog(null, "請確認主機是否正確", "連接錯誤", JOptionPane.ERROR_MESSAGE);
+			}
 		} catch (Exception e) {
+			sendMsgPane("無法連線到伺服器", FtpClient.MSG_TYPE.ERROR);
 			System.out.println("doOpen ERROR");
-			e.printStackTrace();
+			JOptionPane.showMessageDialog(null, "請確認主機是否正確", "連接錯誤", JOptionPane.ERROR_MESSAGE);
+			//			e.printStackTrace();
 			return false;
 		}
 		return true;
@@ -149,6 +169,9 @@ public class FtpClient {
 			this.server.close();
 			this.CMD_PORT = 21;
 			CONNECTION_STATE = false;
+			LIST_CMD_TYPE = false;
+			SERVER_ROOT_DIR = "/";
+			SERVER_CURRENT_DIR = "/";
 		} catch (Exception e) {
 			System.out.println("doQuit ERROR");
 			e.printStackTrace();
@@ -161,6 +184,10 @@ public class FtpClient {
 		try {
 			send("USER " + name);
 			send("PASS " + password);
+			if (this.responseGrabber.getResponse().startsWith("530")) {
+				this.sendMsgPane("嚴重錯誤", MSG_TYPE.ERROR);
+				return false;
+			}
 			doType();
 			doFeat();
 		} catch (Exception e) {
@@ -218,6 +245,10 @@ public class FtpClient {
 
 	public void doBinary() {
 		send("TYPE I");
+	}
+
+	public void doOpts() {
+		send("OPTS UTF8 ON");
 	}
 
 	public void doGet(String f, String local, String remote) {
@@ -327,8 +358,7 @@ public class FtpClient {
 				t = "Unknown: ";
 				c = Color.black;
 		}
-		//				System.out.println("sendMsgPane: " + t + msg);
-		MainUI.append(MainUI.TaResponses, t + msg + "\n", c);
+		MainUI.appendTextPane(t + msg + "\n", c);
 	}
 
 	private FtpFile getFtpFile(String file) {
@@ -413,28 +443,31 @@ public class FtpClient {
 				while (isRunning) {
 					// waiting possible
 					String t = in.readLine();
-					this.passiveResponse = t;
-					sendMsgPane(t, MSG_TYPE.RESPONSE);
-					System.out.println("Response: " + t);
+					if (t != null) {
+						this.passiveResponse = t;
+						System.out.println("Response: " + t);
+						sendMsgPane(t, MSG_TYPE.RESPONSE);
 
-					if (t.indexOf("MLSD") != -1)
-						LIST_CMD_TYPE = true;
-					else if (t.startsWith("421")) {
-						CMD_PORT = 21;
-						CONNECTION_STATE = false;
-						sendMsgPane("由伺服器關閉連線", MSG_TYPE.ERROR);
-						responseGrabber.stop();
-						responseGrabberThread.interrupt();
-						System.out.println("Time out");
-					}
+						if (t.indexOf("MLSD") != -1)
+							LIST_CMD_TYPE = true;
+						else if (t.startsWith("421")) {
+							CMD_PORT = 21;
+							CONNECTION_STATE = false;
+							SERVER_ROOT_DIR = "/";
+							SERVER_CURRENT_DIR = "/";
+							sendMsgPane("由伺服器關閉連線", MSG_TYPE.ERROR);
+							responseGrabber.stop();
+							responseGrabberThread.interrupt();
+						}
 
-					if (t.charAt(0) == '1') {
-						this.oneresponse = false;
-					} else if (t.charAt(0) == '2' && t.charAt(3) == '-') {
-						this.tworesponse = true;
-					} else if (t.charAt(0) == '2' || t.charAt(0) == '3' || t.charAt(0) == '4' || t.charAt(0) == '5') {
-						this.oneresponse = true;
-						this.tworesponse = false;
+						if (t.charAt(0) == '1') {
+							this.oneresponse = false;
+						} else if (t.charAt(0) == '2' && t.charAt(3) == '-') {
+							this.tworesponse = true;
+						} else if (t.charAt(0) == '2' || t.charAt(0) == '3' || t.charAt(0) == '4' || t.charAt(0) == '5') {
+							this.oneresponse = true;
+							this.tworesponse = false;
+						}
 					}
 				}
 			} catch (Exception e) {
