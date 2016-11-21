@@ -154,9 +154,9 @@ var Projects = [{
     "presentation_time": "15:20 - 15:30"
 }, {
     "id": 14,
-    "title_zhtw": "以單眼攝影機即時進行同步定位與地圖構建",
+    "title_zhtw": "以單眼攝影機即時進行同步定位與建圖",
     "title_en": "Real-Time Simultaneous Localisation and Mapping with a Single Camera",
-    "introduction": "將MonoSLAM技術應用於機器人或一般鏡頭裝置的即時3D定位與地圖建構，此方法的核心在機器人或一般鏡頭裝置平滑快速移動經過未知的場景時，透過鏡頭觀察到自然景物經由隨機標定後，持續即時建立不連續的3D軌跡地圖：這其中包含主動地圖建構及測量，能用於和解決裝置初始化位置及方向估算。",
+    "introduction": "將SLAM技術改良並應用於機器人或一般鏡頭裝置的即時同步定位與建圖，此方法的核心在機器人或一般鏡頭裝置平滑快速移動經過未知的場景時，透過鏡頭觀察到自然景物經由隨機標定後，持續即時建立不連續的3D軌跡地圖：這其中包含主動地圖建構及測量，能用於和解決裝置初始化位置及方向估算。",
     "student": "賴郁文、劉恩銘",
     "teacher": "朱明毅",
     "poster_url": null,
