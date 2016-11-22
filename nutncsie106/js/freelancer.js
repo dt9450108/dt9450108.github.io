@@ -59,7 +59,7 @@ function initPortfolio() {
         );
 
         $("#presentation-list").append(presentationItem(Projects[i]));
-        if (i == 15) {
+        if (i == 8) {
             $("#presentation-list").append('<tr><th scope="row"></th><td>15:00 - 15:20</td><td>中場休息</td><td></td><td></td></tr>');
         }
     }
