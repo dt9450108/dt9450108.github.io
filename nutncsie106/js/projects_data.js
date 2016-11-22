@@ -113,7 +113,7 @@ var Projects = [{
     "img": [1, 2, 3, 4, 5, 6, 7, 8, 9],
     "presentation_time": "14:50 - 15:00"
 }, {
-    "id": 11,
+    "id": 12,
     "title_zhtw": "按圖索蹟 App－台南市古蹟檢索",
     "title_en": "",
     "introduction": "本計畫想要在行動裝置上以不使用網路的方式來做出能夠使觀光客了解台南市古蹟的行動應用程式(App)，以達到便利觀光客認識與了解台南市古蹟的目的。",
@@ -123,7 +123,7 @@ var Projects = [{
     "img": [1, 2],
     "presentation_time": "15:20 - 15:30"
 }, {
-    "id": 12,
+    "id": 13,
     "title_zhtw": "數位家庭手機行控系統",
     "title_en": "",
     "introduction": "以Android APP進行智慧家庭監控、管理、紀錄，透過簡易的使用者介面，讓使用者能方便操控家中電源設備及裝置。",
@@ -133,7 +133,7 @@ var Projects = [{
     "img": [1, 2, 3, 4, 5, 6, 7, 8],
     "presentation_time": "15:30 - 15:40"
 }, {
-    "id": 13,
+    "id": 14,
     "title_zhtw": "實況串流APP",
     "title_en": "",
     "introduction": "實況串流",
@@ -143,7 +143,7 @@ var Projects = [{
     "img": [1, 2, 3],
     "presentation_time": "15:40 - 15:50"
 }, {
-    "id": 14,
+    "id": 15,
     "title_zhtw": "以單眼攝影機即時進行同步定位與建圖",
     "title_en": "Real-Time Simultaneous Localisation and Mapping with a Single Camera",
     "introduction": "將SLAM技術改良並應用於機器人或一般鏡頭裝置的即時同步定位與建圖，此方法的核心在機器人或一般鏡頭裝置平滑快速移動經過未知的場景時，透過鏡頭觀察到自然景物經由隨機標定後，持續即時建立不連續的3D軌跡地圖：這其中包含主動地圖建構及測量，能用於和解決裝置初始化位置及方向估算。",
@@ -153,7 +153,7 @@ var Projects = [{
     "img": [1, 2],
     "presentation_time": "15:50 - 16:00"
 }, {
-    "id": 15,
+    "id": 16,
     "title_zhtw": "智慧型個人行動輔具核心技術研究",
     "title_en": "Research on the Core Technology of Intelligent Personal Mobility Aids",
     "introduction": "由於醫療技術的進步與人口結構的改變，台灣已逐漸邁入高齡化的社會，在未來，如何讓高齡化族群能夠藉由科技的協助，而享有獨立自主的生活，已成為一個重要的研究議題。本專題以機器人作業系統ROS(Robot Operating System)為系統開發之環境，已分散式系統架構研究與實作機器人遠端搖控、地圖建構、定位、自動導航及人機介面等核心技術，並將其導入電動輪椅與電動代步車等相關類型之個人行動輔具，發展醫療照護所需之智慧型行動輔具，期望能進而改善高齡化族群之生活品質。",
@@ -163,7 +163,7 @@ var Projects = [{
     "img": [1],
     "presentation_time": "16:00 - 16:10"
 }, {
-    "id": 16,
+    "id": 17,
     "title_zhtw": "Arduino自走車",
     "title_en": "",
     "introduction": "Arduino自走車",
@@ -173,7 +173,7 @@ var Projects = [{
     "img": [1],
     "presentation_time": "16:10 - 16:20"
 }, {
-    "id": 17,
+    "id": 18,
     "title_zhtw": "結合引文網路之論文推薦系統",
     "title_en": "",
     "introduction": "隨著資訊科技與網路的快速發展，學術論文的電子化已經成為趨勢，隨著電子論文的快速傳播，使得電子論文數量呈現爆炸性的成長，造成透過關鍵字搜尋方式會得到許多不同領域的文章，因此一個有效率的搜尋引擎便顯得更為重要。面對龐大的論文資料庫，使用者須逐一檢查論文是否與本身研究主題相關，而推薦系統是被提出的解決方法之一；然而，是否能廣泛收集使用者喜好資訊，以及能否即時呈現相關性高的推薦資訊便是問題所在。<br>本計畫將分析論文間參考及引用的關聯，嘗試建構出論文間的網絡架構，並透過網頁排名以及推薦系統的技術，將其應用在計算論文網絡中各論文的權重和論文之關鍵字出現頻率，進一步設計整合排序方法，透過簡單清楚的使用者介面呈現計算結果，以提供解決推薦資訊缺乏及檢索效率不彰之問題。",
@@ -183,7 +183,7 @@ var Projects = [{
     "img": [1],
     "presentation_time": "16:20 - 16:30"
 }, {
-    "id": 18,
+    "id": 19,
     "title_zhtw": "利用智慧型手機Wi-Fi群眾外包資料設計與實作一基於興趣點的行動服務系統",
     "title_en": "",
     "introduction": "透過Wi-Fi接收訊號強度的變化量與感測器之數值分析使用者移動行為，判斷使用者是否對該處商店感興趣，並且利用群眾外包的方式，藉由分析不同使用者的興趣點序列，將各個商店進行分類，進而了解該商店吸引到之客群。透過比對POI序列及POI的特性預測下一個可能會需要服務的地方，進而提升消費者體驗。",
@@ -193,7 +193,7 @@ var Projects = [{
     "img": [1, 2],
     "presentation_time": "16:30 - 16:40"
 }, {
-    "id": 19,
+    "id": 20,
     "title_zhtw": "雙眼視覺系統研究與實作",
     "title_en": "Research and Implementation of a Binocular Vision System",
     "introduction": "仿傚人類感知環境的架構與方式，採用由雙攝影機組成的雙眼立體視覺系統來偵測障礙物並計算其距離，進而達成導航。",
@@ -203,7 +203,7 @@ var Projects = [{
     "img": [1],
     "presentation_time": "16:40 - 16:50"
 }, {
-    "id": 20,
+    "id": 21,
     "title_zhtw": "行動裝置定位管理系統",
     "title_en": "",
     "introduction": "結合wifi室內定位的相關應用app",
@@ -213,7 +213,7 @@ var Projects = [{
     "img": [1, 2, 3],
     "presentation_time": "16:50 - 17:00"
 }, {
-    "id": 21,
+    "id": 22,
     "title_zhtw": "修修臉App－影像修圖鑑識",
     "title_en": "",
     "introduction": "製作「修修臉」App，用來檢測照片是否被修圖過，首先，匯入一張想比對的照片或圖，透過分析雜訊，來判斷該影像是否有經過修圖。",
@@ -223,7 +223,7 @@ var Projects = [{
     "img": [1],
     "presentation_time": "17:00 - 17:10"
 }, {
-    "id": 22,
+    "id": 23,
     "title_zhtw": "手勢解鎖",
     "title_en": "Mobile Phone Unlock Using Trajectory",
     "introduction": "從早期的數字鎖開始，漸漸有了圖形鎖，但是這些鎖經過了多次的嘗試，然有可能會被外人解開。近年來更發展了指紋鎖，雖然此鎖辨識複雜，唯有使用者可以進行解鎖，可是仍有些情況無法正常使用，例如同一位使用者設定食指為鑰匙，拇指便無法正常辨識;下雨天或洗完手，手部潮濕時進行解鎖仍會有誤判無法解鎖的情況。因此，我們研究設計一道軌跡鎖，盡可能排除上述的外在因素，建立一道可供使用者操作且辨識度高的密碼鎖。",
