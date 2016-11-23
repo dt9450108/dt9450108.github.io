@@ -52,7 +52,7 @@ function initPortfolio() {
             '<a class="portfolio-link" onclick="ShowProjectDialog(' + i + ');"><div class="caption">' +
             '<div class="caption-content"><i class="fa fa-search-plus fa-3x"></i></div></div>' +
             '<img src="img/portfolio/' + (Projects[i].img == null ? "no_photo.jpg" : Projects[i].id + '/' + Projects[i].img[0] + '.jpg') + '" class="img-responsive" alt="' + Projects[i].title_zhtw + '"></a>' +
-            '<div class="portfolio-item-info"><div><p class="portfolio-item-info-header">' + Projects[i].title_zhtw +
+            '<div class="portfolio-item-info"><div><p class="portfolio-item-info-header height-large">' + Projects[i].title_zhtw +
             '</p></div><div><p class="portfolio-item-info-header">學生：</p>' +
             '<p class="portfolio-item-info-content">' + Projects[i].student + '</p></div><div><p class="portfolio-item-info-header">指導教授：</p>' +
             '<p class="portfolio-item-info-content">' + Projects[i].teacher + '</p></div></div></div>'

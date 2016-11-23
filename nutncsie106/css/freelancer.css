@@ -874,4 +874,7 @@ fieldset[disabled] .btn-success.active {
     .portfolio-item-info p {
         font-size: 1.6em;
     }
+    .portfolio-item-info-header.height-large {
+        height: 60px;
+    }
 }
