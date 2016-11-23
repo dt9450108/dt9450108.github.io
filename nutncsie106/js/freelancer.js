@@ -58,7 +58,7 @@ function initPortfolio() {
             '<p class="portfolio-item-info-content">' + Projects[i].teacher + '</p></div></div></div>'
         );
 
-        $("#presentation-list").append(presentationItem(Projects[i]));
+        $("#presentation-list").append(presentationItem(i, Projects[i]));
         if (i == 8) {
             $("#presentation-list").append('<tr><th scope="row"></th><td>15:00 - 15:20</td><td>中場休息</td><td></td><td></td></tr>');
         }
@@ -148,6 +148,6 @@ function jssorHtml(id, img) {
     return html;
 }
 
-function presentationItem(proj) {
-    return '<tr><th scope="row">' + proj.id + '</th><td>' + proj.presentation_time + '</td><td>' + proj.title_zhtw + '</td><td>' + proj.teacher + '</td><td>' + proj.student + '</td></tr>';
+function presentationItem(i, proj) {
+    return '<tr onclick="ShowProjectDialog(' + i + ');"><th scope="row">' + proj.id + '</th><td>' + proj.presentation_time + '</td><td>' + proj.title_zhtw + '</td><td>' + proj.teacher + '</td><td>' + proj.student + '</td></tr>';
 }
