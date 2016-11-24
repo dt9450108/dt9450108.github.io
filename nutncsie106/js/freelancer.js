@@ -89,7 +89,7 @@ function ProjectItem(proj) {
         '<ul class="list-inline item-details">' +
         '<li><p>學生:<strong>' + proj.student + '</strong></p></li>' +
         '<li><p>指導教授:<strong>' + proj.teacher + '</strong></p></li>' +
-        '<li><p>海報:<strong><a href="' + (proj.poster == null ? "#" : proj.poster) + '" target="_blank">觀看海報</a></strong></p></li></ul>' +
+        '<li><p>海報:<strong><a href="' + (proj.poster_url == null ? "#" : "file/" + proj.poster_url + ".pdf") + '" target="_blank">觀看海報</a></strong></p></li></ul>' +
         '<button type="button" class="btn btn-default" data-dismiss="modal"><i class="fa fa-times"></i> 關閉</button>';
 
     return html;
